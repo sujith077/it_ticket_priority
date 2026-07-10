@@ -57,7 +57,7 @@ except:
 
 # Build interactive input form feature collection UI
 with st.form("prediction_form"):
-    st.subheader("New Ticket Parameters")
+    st.subheader("Place an IT support ticket")
     
     col1, col2 = st.columns(2)
     with col1:
@@ -68,7 +68,19 @@ with st.form("prediction_form"):
         # Branch mapping selection (Kandy vs Colombo)
         branch = st.selectbox("Office Branch Location", encoders['Office_Location'].classes_)
         affected_users = st.slider("Scope of Impact (Affected Users)", min_value=1, max_value=50, value=1)
-        business_critical = st.radio("Business Critical System Outage?", encoders['Business_Critical'].classes_, index=1)
+        
+        impact_choice = st.radio(
+            "How badly is this issue affecting your work?",
+            [
+                "🔴 I cannot work at all (Entire system or department is down)", 
+                "🟢 I can still work (Annoying problem, but work can continue)"
+            ]
+        )
+
+    if "I cannot work at all" in impact_choice:
+        business_critical = "Yes"
+    else:
+        business_critical = "No"
         
     submit = st.form_submit_button("Compute System Priority Target")
 
