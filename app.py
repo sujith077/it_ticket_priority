@@ -102,7 +102,7 @@ if submit:
     # Establish priority color alert visual status map parameters
     design_map = {
         "Critical": {"emoji": "🔴", "color": "#ff4b4b"},
-        "High": {"emoji": "orange_circle:", "color": "#ffa500"},
+        "High": {"emoji": "🟠", "color": "#ffa500"},
         "Medium": {"emoji": "🟡", "color": "#f1c40f"},
         "Low": {"emoji": "🟢", "color": "#2ecc71"}
     }
