@@ -72,8 +72,8 @@ with st.form("prediction_form"):
         impact_choice = st.radio(
             "How badly is this issue affecting your work?",
             [
-                "🔴 I cannot work at all (Entire system or department is down)", 
-                "🟢 I can still work (Annoying problem, but work can continue)"
+                "I cannot work at all", 
+                "I can still work"
             ]
         )
 
