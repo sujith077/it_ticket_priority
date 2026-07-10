@@ -31,7 +31,7 @@ user_email = st.session_state.logged_in_email
 
 # --- MAIN APPLICATION DASHBOARD ---
 #st.title("NCHS IT Support Ticket Priority Predictor")
-st.markdown("<h1 style='text-align: center;'>🎫 NCHS IT Support Ticket Priority Predictor</h1>", unsafe_allow_html=True)
+st.markdown("<h1 style='text-align: center;'> NCHS IT Support Ticket Priority Predictor</h1>", unsafe_allow_html=True)
 
 # Sidebar for managing current session status
 st.sidebar.markdown(f"**Logged in as:**\n`{user_email}`")
