@@ -30,7 +30,7 @@ if st.session_state.logged_in_email is None:
 user_email = st.session_state.logged_in_email
 
 # --- MAIN APPLICATION DASHBOARD ---
-st.title("🎫 NCHS IT Support Ticket Priority Predictor")
+st.title("🎫 NCHS IT Support Ticket Priority Predictor",align = "center")
 
 # Sidebar for managing current session status
 st.sidebar.markdown(f"**Logged in as:**\n`{user_email}`")
