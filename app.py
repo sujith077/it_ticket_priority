@@ -40,7 +40,7 @@ if st.sidebar.button("Log Out"):
     st.session_state.logged_in_email = None
     st.rerun()
 
-st.write("Submit your technical issue below. Our machine learning system will automatically categorize and route your request based on operational urgency.")
+#st.write("Submit your technical issue below. Our machine learning system will automatically categorize and route your request based on operational urgency.")
 st.markdown("---")
 
 @st.cache_resource
