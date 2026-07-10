@@ -38,7 +38,7 @@ if st.sidebar.button("Log Out"):
     st.session_state.logged_in_email = None
     st.rerun()
 
-st.write("This system uses an optimized Random Forest Classifier to assign operational response priorities to support tickets.")
+#st.write("This system uses an optimized Random Forest Classifier to assign operational response priorities to support tickets.")
 st.markdown("---")
 
 # Load model assets from file cache
