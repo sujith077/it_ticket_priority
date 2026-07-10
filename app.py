@@ -2,7 +2,7 @@ import streamlit as st
 import pandas as pd
 import joblib
 
-st.set_page_config(page_title="IT Ticket Prioritization System", page_icon="🎫", layout="centered")
+st.set_page_config(page_title="IT Ticket Prioritization System NCHS", page_icon="🎫", layout="centered")
 
 # --- CUSTOM FORM LOGIN GATEWAY ---
 # Initialize session state for user authentication tracking
@@ -30,7 +30,7 @@ if st.session_state.logged_in_email is None:
 user_email = st.session_state.logged_in_email
 
 # --- MAIN APPLICATION DASHBOARD ---
-st.title("🎫 Smart IT Support Ticket Priority Predictor")
+st.title("🎫 NCHS IT Support Ticket Priority Predictor")
 
 # Sidebar for managing current session status
 st.sidebar.markdown(f"**Logged in as:**\n`{user_email}`")
