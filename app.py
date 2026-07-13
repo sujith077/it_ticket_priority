@@ -10,29 +10,39 @@ if 'ticket_database' not in st.session_state:
     st.session_state.ticket_database = []
 
 # --- CUSTOM FORM LOGIN GATEWAY ---
-if 'logged_in_email' not in st.session_state:
-    st.session_state.logged_in_email = None
+if 'logged_in_user' not in st.session_state:
+    st.session_state.logged_in_user = None
+if 'user_role' not in st.session_state:
+    st.session_state.user_role = None
 
-if st.session_state.logged_in_email is None:
+if st.session_state.logged_in_user is None:
     st.title("🎫 Secure IT Support Gateway")
-    st.write("Please log in using your corporate email address to access the portal.")
+    st.write("Please log in to access the portal.")
     
     with st.form("login_gateway"):
-        email_input = st.text_input("Corporate Email Address", placeholder="username@company.com or admin@nchs.lk")
+        username_input = st.text_input("Username / Email Address", placeholder="username@nchs.edu.lk")
+        password_input = st.text_input("Password", type="password", placeholder="••••••••")
         login_submit = st.form_submit_button("Access Portal")
         
         if login_submit:
-            if "@" in email_input and "." in email_input:
-                st.session_state.logged_in_email = email_input.strip().lower()
+            clean_user = username_input.strip().lower()
+            
+            # Check for specific Admin credentials
+            if clean_user == "itsupport@nchs.edu.lk" and password_input == "admin@123":
+                st.session_state.logged_in_user = clean_user
+                st.session_state.user_role = "Admin"
+                st.rerun()
+            # If not admin, treat as standard user (requires valid email structure, password can be anything)
+            elif "@" in clean_user and "." in clean_user:
+                st.session_state.logged_in_user = clean_user
+                st.session_state.user_role = "User"
                 st.rerun()
             else:
-                st.error("Please enter a valid corporate email address.")
+                st.error("Invalid credentials. Please enter a valid corporate email profile or correct admin passwords.")
     st.stop()
 
-user_email = st.session_state.logged_in_email
-
-# Determine if the current user is an admin
-is_admin = user_email.startswith("admin")
+user_email = st.session_state.logged_in_user
+is_admin = (st.session_state.user_role == "Admin")
 
 # --- MAIN APPLICATION INTERFACE ---
 if is_admin:
@@ -41,9 +51,10 @@ else:
     st.markdown("<h1 style='text-align: center;'>🎫 NCHS IT Support Ticket Priority Predictor</h1>", unsafe_allow_html=True)
 
 st.sidebar.markdown(f"**Logged in as:**\n`{user_email}`")
-st.sidebar.markdown(f"**Role:** {'Administrator' if is_admin else 'Standard User'}")
+st.sidebar.markdown(f"**Role:** {st.session_state.user_role}")
 if st.sidebar.button("Log Out"):
-    st.session_state.logged_in_email = None
+    st.session_state.logged_in_user = None
+    st.session_state.user_role = None
     st.rerun()
 
 # ----------------- ADMIN INTERFACE -----------------
@@ -54,7 +65,6 @@ if is_admin:
     if len(st.session_state.ticket_database) > 0:
         st.success(f"🔔 Notification: There are {len(st.session_state.ticket_database)} active tickets awaiting review.")
         
-        # Convert ticket history to a clean dataframe for the admin
         admin_df = pd.DataFrame(st.session_state.ticket_database)
         st.dataframe(admin_df, use_container_width=True)
         
@@ -97,6 +107,7 @@ else:
             branch = st.selectbox("Office Branch Location", encoders['Office_Location'].classes_)
             affected_users = st.slider("Scope of Impact (Affected Users)", min_value=1, max_value=50, value=1)
             
+            # Shortened option labels for cleaner look
             impact_choice = st.radio(
                 "How badly is this issue affecting your work?",
                 [
@@ -104,7 +115,7 @@ else:
                     "🟢 I can still work"
                 ]
             )
-            business_critical = "Yes" if "I cannot work at all" in impact_choice else "No"
+            business_critical = "Yes" if "I cannot work" in impact_choice else "No"
             
         st.write("") 
         
