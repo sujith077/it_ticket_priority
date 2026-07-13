@@ -1,13 +1,42 @@
 import streamlit as st
 import pandas as pd
 import joblib
+import json
+import os
 from datetime import datetime
 
 st.set_page_config(page_title="NCHS IT Ticket System", page_icon="🎫", layout="centered")
 
-# --- DATABASE INITIALIZATION ---
+# --- SMART PLUG-IN: LOCAL FILE DATABASE INTEGRATION ---
+DB_FILE = "tickets.json"
+
+def load_local_database():
+    if os.path.exists(DB_FILE):
+        try:
+            with open(DB_FILE, "r") as f:
+                return json.load(f)
+        except:
+            return []
+    return []
+
+def save_to_local_database(data):
+    with open(DB_FILE, "w") as f:
+        json.dump(data, f, indent=4)
+
+# Load existing tickets into the active session memory
 if 'ticket_database' not in st.session_state:
-    st.session_state.ticket_database = []
+    st.session_state.ticket_database = load_local_database()
+
+# Form key reset state machine tracker
+if 'form_generation_id' not in st.session_state:
+    st.session_state.form_generation_id = 0
+
+# --- SECURE CREDENTIALS REGISTRY ---
+AUTHORIZED_USERS = {
+    "itsupport@nchs.edu.lk": "admin@123",    # Admin Account
+    "sujith.b@nchs.edu.lk": "user@123",      # Student Account 1
+    "rameesha.k@nchs.edu.lk": "user@456"     # Student Account 2
+}
 
 # --- CUSTOM FORM LOGIN GATEWAY ---
 if 'logged_in_user' not in st.session_state:
@@ -17,26 +46,21 @@ if 'user_role' not in st.session_state:
 
 if st.session_state.logged_in_user is None:
     st.title("🎫 Secure IT Support Gateway")
-    st.write("Please log in to access the portal.")
+    st.write("Please log in using your authorized corporate credentials.")
     
     with st.form("login_gateway"):
-        username_input = st.text_input("Username / Email Address", placeholder="username@nchs.edu.lk")
+        username_input = st.text_input("Username / Email Address", placeholder="e.g., sujith.b@nchs.edu.lk")
         password_input = st.text_input("Password", type="password", placeholder="••••••••")
         login_submit = st.form_submit_button("Access Portal")
         
         if login_submit:
             clean_user = username_input.strip().lower()
-            
-            if clean_user == "itsupport@nchs.edu.lk" and password_input == "admin@123":
+            if clean_user in AUTHORIZED_USERS and AUTHORIZED_USERS[clean_user] == password_input:
                 st.session_state.logged_in_user = clean_user
-                st.session_state.user_role = "Admin"
-                st.rerun()
-            elif "@" in clean_user and "." in clean_user:
-                st.session_state.logged_in_user = clean_user
-                st.session_state.user_role = "User"
+                st.session_state.user_role = "Admin" if clean_user == "itsupport@nchs.edu.lk" else "User"
                 st.rerun()
             else:
-                st.error("Invalid credentials. Please enter a valid corporate email profile or correct admin passwords.")
+                st.error("❌ Access Denied: Invalid username or incorrect password.")
     st.stop()
 
 user_email = st.session_state.logged_in_user
@@ -63,10 +87,8 @@ if is_admin:
     if len(st.session_state.ticket_database) > 0:
         admin_df = pd.DataFrame(st.session_state.ticket_database)
         
-        # --- NEW METRICS & VISUALIZATIONS SECTION ---
         st.subheader("📊 System Performance Metrics & Charts")
         
-        # Key Performance Indicator (KPI) Cards
         kpi_col1, kpi_col2, kpi_col3 = st.columns(3)
         with kpi_col1:
             st.metric(label="Total Tickets Logged", value=len(admin_df))
@@ -77,13 +99,10 @@ if is_admin:
             avg_impact = round(admin_df['Affected_Users'].mean(), 1)
             st.metric(label="👥 Avg. Impact Radius", value=f"{avg_impact} Users")
             
-        # Graphical Charts Layout
         chart_col1, chart_col2 = st.columns(2)
-        
         with chart_col1:
             st.markdown("**Tickets Grouped by Priority**")
             priority_counts = admin_df['Assigned_Priority'].value_counts()
-            # Ensure proper ordering of priority levels if present
             order = ['Critical', 'High', 'Medium', 'Low']
             priority_counts = priority_counts.reindex([p for p in order if p in priority_counts.index])
             st.bar_chart(priority_counts)
@@ -93,13 +112,8 @@ if is_admin:
             branch_counts = admin_df['Branch_Location'].value_counts()
             st.bar_chart(branch_counts)
             
-        st.markdown("**📈 Incident Submission Volume Timeline**")
-        timeline_df = admin_df.groupby('Timestamp').size()
-        st.line_chart(timeline_df)
-        
         st.markdown("---")
         st.subheader("📋 Active Operations Data Queue")
-        
         st.dataframe(admin_df, use_container_width=True)
         
         csv_download_data = admin_df.to_csv(index=False).encode('utf-8')
@@ -110,7 +124,7 @@ if is_admin:
             mime="text/csv"
         )
     else:
-        st.info("No active tickets logged in the current session queue to generate analytical metrics.")
+        st.info("No active tickets logged in the current system queue.")
 
 # ----------------- USER INTERFACE -----------------
 else:
@@ -129,7 +143,8 @@ else:
         st.error("Error: Serialized deployment assets (`priority_model.pkl` or `encoders.pkl`) were not detected.")
         st.stop()
 
-    with st.form("prediction_form"):
+    # Dynamic form container implementation key forces field clearing upon state changes
+    with st.form(key=f"prediction_form_{st.session_state.form_generation_id}"):
         st.subheader("New Ticket Parameters")
         
         col1, col2 = st.columns(2)
@@ -159,16 +174,19 @@ else:
         else:
             business_critical = "Yes" if "I cannot work" in impact_choice else "No"
             
-            input_df = pd.DataFrame([{
-                'Department': encoders['Department'].transform([department])[0],
-                'Issue_Category': encoders['Issue_Category'].transform([category])[0],
-                'Device_Type': encoders['Device_Type'].transform([device])[0],
-                'Affected_Users': affected_users,
-                'Business_Critical': encoders['Business_Critical'].transform([business_critical])[0],
-                'Office_Location': encoders['Office_Location'].transform([branch])[0]
-            }])
-            
-            prediction = model.predict(input_df)[0]
+            # SMART PLUG-IN: BUSINESS LOGIC RULE FOR SERVER SECURITY CRITICAL SITUATIONS
+            if category == "Security" and device == "Server":
+                prediction = "Critical"
+            else:
+                input_df = pd.DataFrame([{
+                    'Department': encoders['Department'].transform([department])[0],
+                    'Issue_Category': encoders['Issue_Category'].transform([category])[0],
+                    'Device_Type': encoders['Device_Type'].transform([device])[0],
+                    'Affected_Users': affected_users,
+                    'Business_Critical': encoders['Business_Critical'].transform([business_critical])[0],
+                    'Office_Location': encoders['Office_Location'].transform([branch])[0]
+                }])
+                prediction = model.predict(input_df)[0]
             
             design_map = {
                 "Critical": {"emoji": "🔴", "color": "#ff4b4b"},
@@ -192,5 +210,13 @@ else:
                 "Business_Critical": business_critical,
                 "Assigned_Priority": prediction
             }
+            
+            # Save to active list and sync with tickets.json file storage system
             st.session_state.ticket_database.append(new_ticket_entry)
+            save_to_local_database(st.session_state.ticket_database)
+            
             st.toast(f"Ticket successfully logged!", icon="✅")
+            
+            # Increment form ID to clear fields on the next view execution cycle
+            st.session_state.form_generation_id += 1
+            st.button("File Another Support Ticket")
