@@ -61,9 +61,45 @@ if is_admin:
     st.markdown("---")
     
     if len(st.session_state.ticket_database) > 0:
-        st.success(f"🔔 Notification: There are {len(st.session_state.ticket_database)} active tickets awaiting review.")
-        
         admin_df = pd.DataFrame(st.session_state.ticket_database)
+        
+        # --- NEW METRICS & VISUALIZATIONS SECTION ---
+        st.subheader("📊 System Performance Metrics & Charts")
+        
+        # Key Performance Indicator (KPI) Cards
+        kpi_col1, kpi_col2, kpi_col3 = st.columns(3)
+        with kpi_col1:
+            st.metric(label="Total Tickets Logged", value=len(admin_df))
+        with kpi_col2:
+            critical_count = len(admin_df[admin_df['Assigned_Priority'] == 'Critical'])
+            st.metric(label="🚨 Critical Escalations", value=critical_count)
+        with kpi_col3:
+            avg_impact = round(admin_df['Affected_Users'].mean(), 1)
+            st.metric(label="👥 Avg. Impact Radius", value=f"{avg_impact} Users")
+            
+        # Graphical Charts Layout
+        chart_col1, chart_col2 = st.columns(2)
+        
+        with chart_col1:
+            st.markdown("**Tickets Grouped by Priority**")
+            priority_counts = admin_df['Assigned_Priority'].value_counts()
+            # Ensure proper ordering of priority levels if present
+            order = ['Critical', 'High', 'Medium', 'Low']
+            priority_counts = priority_counts.reindex([p for p in order if p in priority_counts.index])
+            st.bar_chart(priority_counts)
+            
+        with chart_col2:
+            st.markdown("**Ticket Breakdown by Branch Location**")
+            branch_counts = admin_df['Branch_Location'].value_counts()
+            st.bar_chart(branch_counts)
+            
+        st.markdown("**📈 Incident Submission Volume Timeline**")
+        timeline_df = admin_df.groupby('Timestamp').size()
+        st.line_chart(timeline_df)
+        
+        st.markdown("---")
+        st.subheader("📋 Active Operations Data Queue")
+        
         st.dataframe(admin_df, use_container_width=True)
         
         csv_download_data = admin_df.to_csv(index=False).encode('utf-8')
@@ -74,7 +110,7 @@ if is_admin:
             mime="text/csv"
         )
     else:
-        st.info("No active tickets logged in the current session queue.")
+        st.info("No active tickets logged in the current session queue to generate analytical metrics.")
 
 # ----------------- USER INTERFACE -----------------
 else:
@@ -98,7 +134,6 @@ else:
         
         col1, col2 = st.columns(2)
         with col1:
-            # index=None makes selectboxes load completely blank with custom placeholder text
             department = st.selectbox("Originating Department", encoders['Department'].classes_, index=None, placeholder="Choose Department...")
             category = st.selectbox("Functional Issue Category", encoders['Issue_Category'].classes_, index=None, placeholder="Choose Category...")
             device = st.selectbox("Primary Device Classification", encoders['Device_Type'].classes_, index=None, placeholder="Choose Device...")
@@ -106,7 +141,6 @@ else:
             branch = st.selectbox("Office Branch Location", encoders['Office_Location'].classes_, index=None, placeholder="Choose Branch...")
             affected_users = st.slider("Scope of Impact (Affected Users)", min_value=1, max_value=50, value=1)
             
-            # index=None makes radio selections load unselected
             impact_choice = st.radio(
                 "How badly is this issue affecting your work?",
                 ["🔴 I cannot work", "🟢 I can still work"],
@@ -120,7 +154,6 @@ else:
             submit = st.form_submit_button("Compute System Priority Target", use_container_width=True)
 
     if submit:
-        # VALIDATION RULES: Block processing if fields are left blank
         if not department or not category or not device or not branch or not impact_choice:
             st.error("⚠️ Submission Rejected: Please select a value for all fields before computing priority.")
         else:
