@@ -27,12 +27,10 @@ if st.session_state.logged_in_user is None:
         if login_submit:
             clean_user = username_input.strip().lower()
             
-            # Check for specific Admin credentials
             if clean_user == "itsupport@nchs.edu.lk" and password_input == "admin@123":
                 st.session_state.logged_in_user = clean_user
                 st.session_state.user_role = "Admin"
                 st.rerun()
-            # If not admin, treat as standard user (requires valid email structure, password can be anything)
             elif "@" in clean_user and "." in clean_user:
                 st.session_state.logged_in_user = clean_user
                 st.session_state.user_role = "User"
@@ -100,22 +98,20 @@ else:
         
         col1, col2 = st.columns(2)
         with col1:
-            department = st.selectbox("Originating Department", encoders['Department'].classes_)
-            category = st.selectbox("Functional Issue Category", encoders['Issue_Category'].classes_)
-            device = st.selectbox("Primary Device Classification", encoders['Device_Type'].classes_)
+            # index=None makes selectboxes load completely blank with custom placeholder text
+            department = st.selectbox("Originating Department", encoders['Department'].classes_, index=None, placeholder="Choose Department...")
+            category = st.selectbox("Functional Issue Category", encoders['Issue_Category'].classes_, index=None, placeholder="Choose Category...")
+            device = st.selectbox("Primary Device Classification", encoders['Device_Type'].classes_, index=None, placeholder="Choose Device...")
         with col2:
-            branch = st.selectbox("Office Branch Location", encoders['Office_Location'].classes_)
+            branch = st.selectbox("Office Branch Location", encoders['Office_Location'].classes_, index=None, placeholder="Choose Branch...")
             affected_users = st.slider("Scope of Impact (Affected Users)", min_value=1, max_value=50, value=1)
             
-            # Shortened option labels for cleaner look
+            # index=None makes radio selections load unselected
             impact_choice = st.radio(
                 "How badly is this issue affecting your work?",
-                [
-                    "🔴 I cannot work", 
-                    "🟢 I can still work"
-                ]
+                ["🔴 I cannot work", "🟢 I can still work"],
+                index=None
             )
-            business_critical = "Yes" if "I cannot work" in impact_choice else "No"
             
         st.write("") 
         
@@ -124,38 +120,44 @@ else:
             submit = st.form_submit_button("Compute System Priority Target", use_container_width=True)
 
     if submit:
-        input_df = pd.DataFrame([{
-            'Department': encoders['Department'].transform([department])[0],
-            'Issue_Category': encoders['Issue_Category'].transform([category])[0],
-            'Device_Type': encoders['Device_Type'].transform([device])[0],
-            'Affected_Users': affected_users,
-            'Business_Critical': encoders['Business_Critical'].transform([business_critical])[0],
-            'Office_Location': encoders['Office_Location'].transform([branch])[0]
-        }])
-        
-        prediction = model.predict(input_df)[0]
-        
-        design_map = {
-            "Critical": {"emoji": "🔴", "color": "#ff4b4b"},
-            "High": {"emoji": "🟠", "color": "#ffa500"},
-            "Medium": {"emoji": "🟡", "color": "#f1c40f"},
-            "Low": {"emoji": "🟢", "color": "#2ecc71"}
-        }
-        meta = design_map.get(prediction, {"emoji": "ℹ️", "color": "#333333"})
-        
-        st.markdown(f"<div style='padding:20px; border-radius:10px; background-color:{meta['color']}; color:white; font-size:24px; font-weight:bold; text-align:center;'>Resulting Priority Level: {meta['emoji']} {prediction}</div>", unsafe_allow_html=True)
-        st.info(f"Ticket successfully logged under identity: **{user_email}** at **{branch}** Branch.")
+        # VALIDATION RULES: Block processing if fields are left blank
+        if not department or not category or not device or not branch or not impact_choice:
+            st.error("⚠️ Submission Rejected: Please select a value for all fields before computing priority.")
+        else:
+            business_critical = "Yes" if "I cannot work" in impact_choice else "No"
+            
+            input_df = pd.DataFrame([{
+                'Department': encoders['Department'].transform([department])[0],
+                'Issue_Category': encoders['Issue_Category'].transform([category])[0],
+                'Device_Type': encoders['Device_Type'].transform([device])[0],
+                'Affected_Users': affected_users,
+                'Business_Critical': encoders['Business_Critical'].transform([business_critical])[0],
+                'Office_Location': encoders['Office_Location'].transform([branch])[0]
+            }])
+            
+            prediction = model.predict(input_df)[0]
+            
+            design_map = {
+                "Critical": {"emoji": "🔴", "color": "#ff4b4b"},
+                "High": {"emoji": "🟠", "color": "#ffa500"},
+                "Medium": {"emoji": "🟡", "color": "#f1c40f"},
+                "Low": {"emoji": "🟢", "color": "#2ecc71"}
+            }
+            meta = design_map.get(prediction, {"emoji": "ℹ️", "color": "#333333"})
+            
+            st.markdown(f"<div style='padding:20px; border-radius:10px; background-color:{meta['color']}; color:white; font-size:24px; font-weight:bold; text-align:center;'>Resulting Priority Level: {meta['emoji']} {prediction}</div>", unsafe_allow_html=True)
+            st.info(f"Ticket successfully logged under identity: **{user_email}** at **{branch}** Branch.")
 
-        new_ticket_entry = {
-            "Timestamp": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
-            "User_Email": user_email,
-            "Branch_Location": branch,
-            "Department": department,
-            "Issue_Category": category,
-            "Device_Type": device,
-            "Affected_Users": affected_users,
-            "Business_Critical": business_critical,
-            "Assigned_Priority": prediction
-        }
-        st.session_state.ticket_database.append(new_ticket_entry)
-        st.toast(f"Ticket successfully logged!", icon="✅")
+            new_ticket_entry = {
+                "Timestamp": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+                "User_Email": user_email,
+                "Branch_Location": branch,
+                "Department": department,
+                "Issue_Category": category,
+                "Device_Type": device,
+                "Affected_Users": affected_users,
+                "Business_Critical": business_critical,
+                "Assigned_Priority": prediction
+            }
+            st.session_state.ticket_database.append(new_ticket_entry)
+            st.toast(f"Ticket successfully logged!", icon="✅")
