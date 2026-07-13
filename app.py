@@ -28,20 +28,6 @@ if 'ticket_database' not in st.session_state:
 
 if 'form_generation_id' not in st.session_state:
     st.session_state.form_generation_id = 0
-
-with st.form("login_gateway"):
-        username_input = st.text_input(
-            "Username / Email Address", 
-            placeholder="e.g., sujith.b@nchs.edu.lk",
-            autocomplete="username"  # Tells the browser this is a login field
-        )
-        password_input = st.text_input(
-            "Password", 
-            type="password", 
-            placeholder="••••••••",
-            autocomplete="current-password"  # Prevents the "Use strong password" popup
-        )
-        login_submit = st.form_submit_button("Access Portal")
     
 # --- SECURE CREDENTIALS REGISTRY ---
 AUTHORIZED_USERS = {
