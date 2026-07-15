@@ -203,8 +203,20 @@ else:
                         'Device_Type': encoders['Device_Type'].transform([device])[0],
                         'Affected_Users': affected_users,
                         'Business_Critical': encoders['Business_Critical'].transform([business_critical])[0],
-                        'Office_Location': encoders['Office_Location'].transform([branch])[0]
+                        'Office_Location': encoders['Office_Location'].transform([branch])[0],
+                        'Impact_Score': calculated_impact_score
                     }])
+
+                    column_order = [
+                        'Department', 
+                        'Issue_Category', 
+                        'Device_Type', 
+                        'Affected_Users', 
+                        'Business_Critical', 
+                        'Office_Location', 
+                        'Impact_Score'
+                    ]
+            input_df = input_df[column_order]
                     prediction = model.predict(input_df)[0]
                 
                 design_map = {
