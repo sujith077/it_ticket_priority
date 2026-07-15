@@ -195,6 +195,8 @@ else:
                 if category == "Security" and device == "Server":
                     prediction = "Critical"
                 else:
+                    impact_multiplier = 1.5 if business_critical == "Yes" else 0.5
+                    calculated_impact_score = affected_users * impact_multiplier
                     input_df = pd.DataFrame([{
                         'Department': encoders['Department'].transform([department])[0],
                         'Issue_Category': encoders['Issue_Category'].transform([category])[0],
