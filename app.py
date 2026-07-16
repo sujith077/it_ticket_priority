@@ -33,7 +33,7 @@ if 'form_generation_id' not in st.session_state:
 AUTHORIZED_USERS = {
     "itsupport@nchs.edu.lk": "admin@123",    # Admin Account
     "sujith.b@nchs.edu.lk": "user@123",      # Student Account 1
-    "rameesha.k@nchs.edu.lk": "user@456"     # Student Account 2
+    "ayesha.k@nchs.edu.lk": "user@456"     # Student Account 2
 }
 
 # --- CUSTOM FORM LOGIN GATEWAY ---
